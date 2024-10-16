@@ -1,1 +1,65 @@
-i am on git 
+<?php
+// Hard-coded database configuration
+$db_config = [
+    'host' => 'your-rds-endpoint.rds.amazonaws.com',
+    'user' => 'your_rds_username',
+    'password' => 'your_rds_password',
+    'database' => 'user_info'
+];
+
+$message = '';
+
+// Handle form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $name = $_POST['name'];
+    $age = $_POST['age'];
+    
+    try {
+        $conn = new mysqli($db_config['host'], $db_config['user'], $db_config['password'], $db_config['database']);
+        
+        if ($conn->connect_error) {
+            throw new Exception("Connection failed: " . $conn->connect_error);
+        }
+        
+        $stmt = $conn->prepare("INSERT INTO users (name, age) VALUES (?, ?)");
+        $stmt->bind_param("si", $name, $age);
+        
+        if ($stmt->execute()) {
+            $message = "Data submitted successfully!";
+        } else {
+            throw new Exception("Error: " . $stmt->error);
+        }
+        
+        $stmt->close();
+        $conn->close();
+    } catch (Exception $e) {
+        $message = "An error occurred: " . $e->getMessage();
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Information Form</title>
+</head>
+<body>
+    <h1>User Information Form</h1>
+    
+    <?php if ($message): ?>
+        <p><?php echo htmlspecialchars($message); ?></p>
+    <?php endif; ?>
+    
+    <form method="POST">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br><br>
+        
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" required><br><br>
+        
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
